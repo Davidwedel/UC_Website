@@ -1,0 +1,129 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    color: white;
+    padding: 40px 20px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+main {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+}
+
+.recordings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.recording-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.recording-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.recording-info {
+    flex: 1;
+}
+
+.recording-date {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.recording-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #333;
+}
+
+.listen-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.listen-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.no-recordings {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.no-recordings p {
+    font-size: 1.2em;
+}
+
+footer {
+    text-align: center;
+    color: white;
+    padding: 20px;
+    opacity: 0.8;
+    font-size: 0.9em;
+}
+
+@media (max-width: 600px) {
+    header h1 {
+        font-size: 2em;
+    }
+
+    .recording-card {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .listen-btn {
+        width: 100%;
+        text-align: center;
+    }
+}

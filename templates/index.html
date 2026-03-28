@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church Recordings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Church Recordings</h1>
+            <p class="subtitle">Latest recordings from Listen to Church</p>
+        </header>
+
+        <main>
+            {% if recordings %}
+                <div class="recordings-list">
+                    {% for recording in recordings %}
+                    <div class="recording-card">
+                        <div class="recording-info">
+                            <div class="recording-date">
+                                {{ recording.received_at }}
+                            </div>
+                            {% if recording.title %}
+                            <div class="recording-title">
+                                {{ recording.title }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <a href="{{ recording.link }}" target="_blank" rel="noopener noreferrer" class="listen-btn">
+                            Listen Now
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-recordings">
+                    <p>No recordings available yet. Check back soon!</p>
+                </div>
+            {% endif %}
+        </main>
+
+        <footer>
+            <p>Automatically updated from email notifications</p>
+        </footer>
+    </div>
+</body>
+</html>
