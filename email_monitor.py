@@ -25,6 +25,19 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+def init_db():
+    """Initialize database if it doesn't exist"""
+    with get_db() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS recordings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                link TEXT NOT NULL,
+                title TEXT,
+                received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+
 def extract_church_links(text):
     """Extract listentochurch.com links from email text"""
     pattern = r'https?://listentochurch\.com/signed/recording/\d+\?signature=[a-f0-9]+'
@@ -53,15 +66,18 @@ def get_email_body(msg):
             print(f"Error decoding message: {e}")
     return body
 
-def save_recording(link, title=None):
+def save_recording(link, title=None, received_at=None):
     """Save recording link to database if it doesn't exist"""
+    if received_at is None:
+        received_at = datetime.now()
+
     with get_db() as conn:
         # Check if link already exists
         existing = conn.execute('SELECT id FROM recordings WHERE link = ?', (link,)).fetchone()
         if not existing:
             conn.execute(
                 'INSERT INTO recordings (link, title, received_at) VALUES (?, ?, ?)',
-                (link, title, datetime.now())
+                (link, title, received_at)
             )
             conn.commit()
             print(f"New recording saved: {link}")
@@ -86,9 +102,9 @@ def check_email():
         # Select inbox
         mail.select('inbox')
 
-        # Search for unseen emails from the last day
+        # Search for all emails from ListenToChurch from the last day
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%d-%b-%Y')
-        status, messages = mail.search(None, f'(UNSEEN SINCE {yesterday})')
+        status, messages = mail.search(None, f'(FROM "ListenToChurch" SINCE {yesterday})')
 
         if status != 'OK':
             print("No new messages")
@@ -113,7 +129,39 @@ def check_email():
             if isinstance(subject, bytes):
                 subject = subject.decode('utf-8', errors='ignore')
 
+            # Get email date and convert to local time
+            email_date = None
+            if msg['Date']:
+                try:
+                    email_date = email.utils.parsedate_to_datetime(msg['Date'])
+                    # Convert to local time
+                    if email_date.tzinfo is not None:
+                        email_date = email_date.astimezone()
+                except Exception as e:
+                    print(f"Error parsing email date: {e}")
+
             print(f"Processing email: {subject}")
+
+            # Check if email was received on Sunday
+            if email_date is None or email_date.weekday() != 6:  # 6 = Sunday
+                print("Email not received on Sunday, skipping...")
+                continue
+
+            # Determine service type based on time
+            hour = email_date.hour
+            minute = email_date.minute
+            time_minutes = hour * 60 + minute
+
+            service_title = None
+            if 10 * 60 <= time_minutes < 10 * 60 + 45:  # 10:00 - 10:45
+                service_title = "Sunday School Opening"
+            elif 10 * 60 + 45 <= time_minutes < 14 * 60:  # 10:45 - 14:00
+                service_title = "Sunday Morning Service"
+            elif 18 * 60 + 30 <= time_minutes < 23 * 60:  # 18:30 - 23:00
+                service_title = "Sunday Evening Service"
+            else:
+                print(f"Email received at {email_date.strftime('%H:%M')} - outside service times, skipping...")
+                continue
 
             # Get email body
             body = get_email_body(msg)
@@ -122,9 +170,9 @@ def check_email():
             links = extract_church_links(body)
 
             if links:
-                print(f"Found {len(links)} recording link(s)")
+                print(f"Found {len(links)} recording link(s) - {service_title}")
                 for link in links:
-                    save_recording(link, subject)
+                    save_recording(link, service_title, email_date)
             else:
                 print("No recording links found in this email")
 
@@ -138,6 +186,9 @@ def check_email():
 
 def main():
     """Main loop - continuously check for new emails"""
+    # Initialize database
+    init_db()
+
     print("Email monitor started")
     print(f"Checking email: {EMAIL_ADDRESS}")
     print(f"IMAP server: {IMAP_SERVER}:{IMAP_PORT}")
