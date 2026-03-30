@@ -18,7 +18,7 @@ IMAP_SERVER = os.environ.get('IMAP_SERVER', 'imap.gmail.com')
 IMAP_PORT = int(os.environ.get('IMAP_PORT', '993'))
 CHECK_INTERVAL = int(os.environ.get('CHECK_INTERVAL', '300'))  # 5 minutes default
 
-DATABASE = 'recordings.db'
+DATABASE = '/var/www/unitedcenter/recordings.db'
 
 def get_db():
     conn = sqlite3.connect(DATABASE)

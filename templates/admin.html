@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Church Recordings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Admin</h1>
+            <p class="subtitle">
+                <a href="{{ url_for('index') }}" style="color:white;">View Site</a>
+                &nbsp;|&nbsp;
+                <a href="{{ url_for('admin_logout') }}" style="color:white;">Logout</a>
+            </p>
+        </header>
+        <main>
+            {% if recordings %}
+            <div class="recordings-list">
+                {% for r in recordings %}
+                <div class="recording-card {% if r.hidden %}card-hidden{% endif %}">
+                    <div class="recording-info">
+                        <div class="recording-date">{{ r.received_at }}</div>
+                        <div class="recording-title">
+                            {{ r.custom_title or r.title or '(no title)' }}
+                            {% if r.hidden %}<span class="badge-hidden">hidden</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="admin-actions">
+                        <form method="post" action="{{ url_for('admin_update_title', id=r.id) }}" class="title-form">
+                            <input type="text" name="title" value="{{ r.custom_title or '' }}"
+                                   placeholder="{{ r.title or 'Custom title...' }}">
+                            <button type="submit">Save</button>
+                        </form>
+                        <form method="post" action="{{ url_for('admin_toggle_hidden', id=r.id) }}">
+                            <button type="submit" class="btn-toggle {% if r.hidden %}btn-show{% else %}btn-hide{% endif %}">
+                                {{ 'Show' if r.hidden else 'Hide' }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-recordings"><p>No recordings yet.</p></div>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>
