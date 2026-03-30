@@ -8,15 +8,34 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+load_dotenv('/var/www/unitedcenter/.env')
 
-# Email configuration from environment variables
 EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 IMAP_SERVER = os.environ.get('IMAP_SERVER', 'imap.gmail.com')
 IMAP_PORT = int(os.environ.get('IMAP_PORT', '993'))
-CHECK_INTERVAL = int(os.environ.get('CHECK_INTERVAL', '300'))  # 5 minutes default
+CHECK_INTERVAL = int(os.environ.get('CHECK_INTERVAL', '300'))
+
+def load_service_schedule():
+    """Load service schedule from SERVICE_n=HH:MM-HH:MM=Name entries in .env"""
+    schedule = []
+    i = 1
+    while True:
+        entry = os.environ.get(f'SERVICE_{i}')
+        if not entry:
+            break
+        try:
+            time_range, name = entry.split('=', 1)
+            start_str, end_str = time_range.split('-')
+            start_h, start_m = map(int, start_str.split(':'))
+            end_h, end_m = map(int, end_str.split(':'))
+            schedule.append((start_h * 60 + start_m, end_h * 60 + end_m, name.strip()))
+        except ValueError:
+            print(f"Warning: could not parse SERVICE_{i}={entry}, skipping")
+        i += 1
+    return schedule
+
+SERVICE_SCHEDULE = load_service_schedule()
 
 DATABASE = '/var/www/unitedcenter/recordings.db'
 
@@ -150,17 +169,12 @@ def check_email():
                 print("Email not received on Sunday, saving as hidden...")
                 hidden = 1
             else:
-                hour = email_date.hour
-                minute = email_date.minute
-                time_minutes = hour * 60 + minute
-
-                if 10 * 60 <= time_minutes < 10 * 60 + 45:  # 10:00 - 10:45
-                    service_title = "Sunday School Opening"
-                elif 10 * 60 + 45 <= time_minutes < 14 * 60:  # 10:45 - 14:00
-                    service_title = "Sunday Morning Service"
-                elif 18 * 60 + 30 <= time_minutes < 23 * 60:  # 18:30 - 23:00
-                    service_title = "Sunday Evening Service"
-                else:
+                time_minutes = email_date.hour * 60 + email_date.minute
+                for start, end, name in SERVICE_SCHEDULE:
+                    if start <= time_minutes < end:
+                        service_title = name
+                        break
+                if service_title is None:
                     print(f"Email received at {email_date.strftime('%H:%M')} - outside service times, saving as hidden...")
                     hidden = 1
 
