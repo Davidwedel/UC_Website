@@ -66,7 +66,7 @@ def get_email_body(msg):
             print(f"Error decoding message: {e}")
     return body
 
-def save_recording(link, title=None, received_at=None):
+def save_recording(link, title=None, received_at=None, hidden=0):
     """Save recording link to database if it doesn't exist"""
     if received_at is None:
         received_at = datetime.now()
@@ -76,11 +76,11 @@ def save_recording(link, title=None, received_at=None):
         existing = conn.execute('SELECT id FROM recordings WHERE link = ?', (link,)).fetchone()
         if not existing:
             conn.execute(
-                'INSERT INTO recordings (link, title, received_at) VALUES (?, ?, ?)',
-                (link, title, received_at)
+                'INSERT INTO recordings (link, title, received_at, hidden) VALUES (?, ?, ?, ?)',
+                (link, title, received_at, hidden)
             )
             conn.commit()
-            print(f"New recording saved: {link}")
+            print(f"New recording saved{'(hidden)' if hidden else ''}: {link}")
             return True
         else:
             print(f"Recording already exists: {link}")
@@ -142,26 +142,27 @@ def check_email():
 
             print(f"Processing email: {subject}")
 
-            # Check if email was received on Sunday
-            if email_date is None or email_date.weekday() != 6:  # 6 = Sunday
-                print("Email not received on Sunday, skipping...")
-                continue
-
-            # Determine service type based on time
-            hour = email_date.hour
-            minute = email_date.minute
-            time_minutes = hour * 60 + minute
-
+            # Determine if this is a known Sunday service time
+            hidden = 0
             service_title = None
-            if 10 * 60 <= time_minutes < 10 * 60 + 45:  # 10:00 - 10:45
-                service_title = "Sunday School Opening"
-            elif 10 * 60 + 45 <= time_minutes < 14 * 60:  # 10:45 - 14:00
-                service_title = "Sunday Morning Service"
-            elif 18 * 60 + 30 <= time_minutes < 23 * 60:  # 18:30 - 23:00
-                service_title = "Sunday Evening Service"
+
+            if email_date is None or email_date.weekday() != 6:  # 6 = Sunday
+                print("Email not received on Sunday, saving as hidden...")
+                hidden = 1
             else:
-                print(f"Email received at {email_date.strftime('%H:%M')} - outside service times, skipping...")
-                continue
+                hour = email_date.hour
+                minute = email_date.minute
+                time_minutes = hour * 60 + minute
+
+                if 10 * 60 <= time_minutes < 10 * 60 + 45:  # 10:00 - 10:45
+                    service_title = "Sunday School Opening"
+                elif 10 * 60 + 45 <= time_minutes < 14 * 60:  # 10:45 - 14:00
+                    service_title = "Sunday Morning Service"
+                elif 18 * 60 + 30 <= time_minutes < 23 * 60:  # 18:30 - 23:00
+                    service_title = "Sunday Evening Service"
+                else:
+                    print(f"Email received at {email_date.strftime('%H:%M')} - outside service times, saving as hidden...")
+                    hidden = 1
 
             # Get email body
             body = get_email_body(msg)
@@ -170,9 +171,9 @@ def check_email():
             links = extract_church_links(body)
 
             if links:
-                print(f"Found {len(links)} recording link(s) - {service_title}")
+                print(f"Found {len(links)} recording link(s) - {service_title or 'unknown'}")
                 for link in links:
-                    save_recording(link, service_title, email_date)
+                    save_recording(link, service_title, email_date, hidden=hidden)
             else:
                 print("No recording links found in this email")
 
