@@ -7,7 +7,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from functools import wraps
 
-load_dotenv('/var/www/unitedcenter/.env')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -26,7 +27,7 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-DATABASE = '/var/www/unitedcenter/recordings.db'
+DATABASE = os.path.join(BASE_DIR, 'recordings.db')
 
 def get_db():
     conn = sqlite3.connect(DATABASE)

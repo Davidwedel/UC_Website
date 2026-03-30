@@ -8,7 +8,8 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-load_dotenv('/var/www/unitedcenter/.env')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
@@ -37,7 +38,7 @@ def load_service_schedule():
 
 SERVICE_SCHEDULE = load_service_schedule()
 
-DATABASE = '/var/www/unitedcenter/recordings.db'
+DATABASE = os.path.join(BASE_DIR, 'recordings.db')
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
