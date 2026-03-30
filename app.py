@@ -13,6 +13,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+SITE_NAME = os.environ.get('SITE_NAME', 'Church Recordings')
+
+@app.context_processor
+def inject_site_name():
+    return dict(site_name=SITE_NAME)
 
 limiter = Limiter(
     app=app,
