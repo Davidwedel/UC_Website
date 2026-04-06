@@ -16,6 +16,7 @@ EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 IMAP_SERVER = os.environ.get('IMAP_SERVER', 'imap.gmail.com')
 IMAP_PORT = int(os.environ.get('IMAP_PORT', '993'))
 CHECK_INTERVAL = int(os.environ.get('CHECK_INTERVAL', '300'))
+RECORDING_MAX_AGE_DAYS = int(os.environ.get('RECORDING_MAX_AGE_DAYS', '0'))
 
 def load_service_schedule():
     """Load service schedule from SERVICE_n=HH:MM-HH:MM=Name entries in .env"""
@@ -26,11 +27,14 @@ def load_service_schedule():
         if not entry:
             break
         try:
-            time_range, name = entry.split('=', 1)
+            parts = entry.split('=', 2)
+            time_range = parts[0]
+            name = parts[1].strip()
+            visible_by_default = (parts[2].strip().lower() != 'hidden') if len(parts) > 2 else True
             start_str, end_str = time_range.split('-')
             start_h, start_m = map(int, start_str.split(':'))
             end_h, end_m = map(int, end_str.split(':'))
-            schedule.append((start_h * 60 + start_m, end_h * 60 + end_m, name.strip()))
+            schedule.append((start_h * 60 + start_m, end_h * 60 + end_m, name, visible_by_default))
         except ValueError:
             print(f"Warning: could not parse SERVICE_{i}={entry}, skipping")
         i += 1
@@ -57,6 +61,19 @@ def init_db():
             )
         ''')
         conn.commit()
+
+def purge_old_recordings():
+    """Delete recordings older than RECORDING_MAX_AGE_DAYS. Skipped if set to 0."""
+    if not RECORDING_MAX_AGE_DAYS:
+        return
+    cutoff = datetime.now() - timedelta(days=RECORDING_MAX_AGE_DAYS)
+    with get_db() as conn:
+        result = conn.execute(
+            'DELETE FROM recordings WHERE received_at < ?', (cutoff,)
+        )
+        conn.commit()
+    if result.rowcount:
+        print(f"Purged {result.rowcount} recording(s) older than {RECORDING_MAX_AGE_DAYS} days")
 
 def extract_church_links(text):
     """Extract listentochurch.com links from email text"""
@@ -171,9 +188,11 @@ def check_email():
                 hidden = 1
             else:
                 time_minutes = email_date.hour * 60 + email_date.minute
-                for start, end, name in SERVICE_SCHEDULE:
+                for start, end, name, visible_by_default in SERVICE_SCHEDULE:
                     if start <= time_minutes < end:
                         service_title = name
+                        if not visible_by_default:
+                            hidden = 1
                         break
                 if service_title is None:
                     print(f"Email received at {email_date.strftime('%H:%M')} - outside service times, saving as hidden...")
@@ -214,6 +233,7 @@ def main():
     while True:
         try:
             print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Checking for new emails...")
+            purge_old_recordings()
             check_email()
             print(f"Sleeping for {CHECK_INTERVAL} seconds...")
             time.sleep(CHECK_INTERVAL)
