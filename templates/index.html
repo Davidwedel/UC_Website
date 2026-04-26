@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
 </head>
 <body>
     <div class="container">
@@ -14,23 +14,27 @@
         </header>
 
         <main>
-            {% if recordings %}
+            {% if grouped_recordings %}
                 <div class="recordings-list">
-                    {% for recording in recordings %}
-                    <div class="recording-card">
-                        <div class="recording-info">
-                            <div class="recording-date">
-                                {{ recording.received_at }}
+                    {% for group in grouped_recordings %}
+                    <div class="date-group">
+                        <h2 class="date-header">{{ group.date_label }}</h2>
+                        <div class="date-group-recordings">
+                            {% for recording in group.recordings %}
+                            <div class="recording-card">
+                                <div class="recording-info">
+                                    {% if recording.display_title %}
+                                    <div class="recording-title">
+                                        {{ recording.display_title }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <a href="{{ recording.link }}" target="_blank" rel="noopener noreferrer" class="listen-btn">
+                                    Listen Now
+                                </a>
                             </div>
-                            {% if recording.title %}
-                            <div class="recording-title">
-                                {{ recording.title }}
-                            </div>
-                            {% endif %}
+                            {% endfor %}
                         </div>
-                        <a href="{{ recording.link }}" target="_blank" rel="noopener noreferrer" class="listen-btn">
-                            Listen Now
-                        </a>
                     </div>
                     {% endfor %}
                 </div>

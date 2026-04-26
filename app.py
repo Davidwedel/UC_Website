@@ -1,11 +1,18 @@
 from flask import Flask, render_template, jsonify, session, request, redirect, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import re
 import sqlite3
 import os
+from collections import OrderedDict
 from datetime import datetime
 from dotenv import load_dotenv
 from functools import wraps
+
+_DAY_PREFIX = re.compile(
+    r'^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+',
+    re.IGNORECASE
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(BASE_DIR, '.env'))
@@ -64,12 +71,32 @@ def login_required(f):
 @limiter.limit("60 per minute")
 def index():
     with get_db() as conn:
-        recordings = conn.execute(
+        rows = conn.execute(
             '''SELECT id, link, COALESCE(custom_title, title) AS title, received_at
                FROM recordings WHERE hidden = 0
                ORDER BY received_at DESC LIMIT 100'''
         ).fetchall()
-    return render_template('index.html', recordings=recordings)
+
+    groups = OrderedDict()
+    for row in rows:
+        rec = dict(row)
+        try:
+            dt = datetime.fromisoformat(rec['received_at'])
+            date_key = dt.date()
+            date_label = dt.strftime('%A, %B %-d, %Y')
+        except (ValueError, TypeError):
+            date_key = 'unknown'
+            date_label = 'Unknown Date'
+        rec['display_title'] = _DAY_PREFIX.sub('', rec['title']) if rec['title'] else rec['title']
+        if date_key not in groups:
+            groups[date_key] = {'date_label': date_label, 'recordings': []}
+        groups[date_key]['recordings'].append(rec)
+
+    grouped = list(groups.values())
+    for group in grouped:
+        group['recordings'].sort(key=lambda r: r['received_at'] or '')
+
+    return render_template('index.html', grouped_recordings=grouped)
 
 @app.route('/api/recordings')
 @limiter.limit("30 per minute")
