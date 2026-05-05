@@ -17,6 +17,29 @@
             </p>
         </header>
         <main>
+            <div class="upload-section">
+                <h2 class="date-header" style="margin-bottom:16px;">Upload Recording</h2>
+                <form method="post" action="{{ url_for('admin_upload') }}" enctype="multipart/form-data" class="upload-form">
+                    <div class="drop-zone" id="dropZone">
+                        <span class="drop-zone__prompt">Drop audio file here or click to browse</span>
+                        <span class="drop-zone__filename" id="dropZoneFilename"></span>
+                        <input type="file" name="audio_file" id="audioFile"
+                               accept=".mp3,.wav,.m4a,.ogg,.aac,.flac"
+                               class="drop-zone__input" required>
+                    </div>
+                    <div class="upload-meta">
+                        <div class="upload-field">
+                            <label for="recordingDate">Date</label>
+                            <input type="date" name="recording_date" id="recordingDate" value="{{ today }}" required>
+                        </div>
+                        <div class="upload-field">
+                            <label for="recordingTitle">Title (optional)</label>
+                            <input type="text" name="title" id="recordingTitle" placeholder="e.g. Sunday Morning Service">
+                        </div>
+                        <button type="submit" class="listen-btn upload-submit">Upload</button>
+                    </div>
+                </form>
+            </div>
             {% if recordings %}
             <div class="recordings-list">
                 {% for r in recordings %}
@@ -40,6 +63,10 @@
                             </button>
                         </form>
                         <a href="{{ r.link }}" target="_blank" rel="noopener noreferrer" class="listen-btn">Listen</a>
+                        <form method="post" action="{{ url_for('admin_delete', id=r.id) }}"
+                              onsubmit="return confirm('Delete this recording?')">
+                            <button type="submit" class="btn-delete">Delete</button>
+                        </form>
                     </div>
                 </div>
                 {% endfor %}
@@ -49,5 +76,32 @@
             {% endif %}
         </main>
     </div>
+<script>
+(function() {
+    var zone = document.getElementById('dropZone');
+    var input = document.getElementById('audioFile');
+    var label = document.getElementById('dropZoneFilename');
+
+    zone.addEventListener('click', function() { input.click(); });
+    input.addEventListener('change', function() {
+        label.textContent = input.files[0] ? input.files[0].name : '';
+    });
+    zone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        zone.classList.add('drop-zone--over');
+    });
+    ['dragleave', 'dragend'].forEach(function(t) {
+        zone.addEventListener(t, function() { zone.classList.remove('drop-zone--over'); });
+    });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('drop-zone--over');
+        if (e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            label.textContent = input.files[0].name;
+        }
+    });
+})();
+</script>
 </body>
 </html>

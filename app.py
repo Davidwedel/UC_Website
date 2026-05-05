@@ -4,10 +4,12 @@ from flask_limiter.util import get_remote_address
 import re
 import sqlite3
 import os
+import uuid
 from collections import OrderedDict
 from datetime import datetime
 from dotenv import load_dotenv
 from functools import wraps
+from werkzeug.utils import secure_filename
 
 _DAY_PREFIX = re.compile(
     r'^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+',
@@ -19,6 +21,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
 SITE_NAME = os.environ.get('SITE_NAME', 'Church Recordings')
@@ -35,6 +38,15 @@ limiter = Limiter(
 )
 
 DATABASE = os.path.join(BASE_DIR, 'recordings.db')
+
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'recordings')
+ALLOWED_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg', 'aac', 'flac'}
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -133,7 +145,8 @@ def admin():
             '''SELECT id, link, title, custom_title, hidden, received_at
                FROM recordings ORDER BY received_at DESC LIMIT 100'''
         ).fetchall()
-    return render_template('admin.html', recordings=recordings)
+    return render_template('admin.html', recordings=recordings,
+                           today=datetime.now().strftime('%Y-%m-%d'))
 
 @app.route('/admin/recording/<int:id>/title', methods=['POST'])
 @login_required
@@ -151,6 +164,54 @@ def admin_toggle_hidden(id):
         conn.execute('UPDATE recordings SET hidden = NOT hidden WHERE id = ?', (id,))
         conn.commit()
     return redirect(url_for('admin'))
+
+@app.route('/admin/recording/<int:id>/delete', methods=['POST'])
+@login_required
+def admin_delete(id):
+    with get_db() as conn:
+        row = conn.execute('SELECT link FROM recordings WHERE id = ?', (id,)).fetchone()
+        if row:
+            link = row['link']
+            if link and link.startswith('/static/uploads/'):
+                file_path = os.path.join(BASE_DIR, link.lstrip('/'))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            conn.execute('DELETE FROM recordings WHERE id = ?', (id,))
+            conn.commit()
+    return redirect(url_for('admin'))
+
+
+@app.route('/admin/upload', methods=['POST'])
+@login_required
+def admin_upload():
+    file = request.files.get('audio_file')
+    if not file or file.filename == '' or not allowed_file(file.filename):
+        return redirect(url_for('admin'))
+
+    safe_name = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+    file.save(os.path.join(UPLOAD_FOLDER, safe_name))
+
+    link = f"/static/uploads/recordings/{safe_name}"
+    title = request.form.get('title', '').strip() or None
+    raw_date = request.form.get('recording_date', '').strip()
+    try:
+        received_at = datetime.strptime(raw_date, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        received_at = datetime.now()
+
+    with get_db() as conn:
+        conn.execute(
+            'INSERT INTO recordings (link, title, received_at, hidden) VALUES (?, ?, ?, 0)',
+            (link, title, received_at)
+        )
+        conn.commit()
+    return redirect(url_for('admin'))
+
+
+@app.errorhandler(413)
+def file_too_large(e):
+    return redirect(url_for('admin'))
+
 
 if __name__ == '__main__':
     init_db()

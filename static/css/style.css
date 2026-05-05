@@ -211,6 +211,18 @@ footer {
     width: 100%;
 }
 
+.btn-delete {
+    background: #c0392b;
+    color: white;
+    width: 100%;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
 .card-hidden {
     opacity: 0.5;
 }
@@ -239,4 +251,82 @@ footer {
         width: 100%;
         text-align: center;
     }
+}
+
+/* Upload section */
+.upload-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px 30px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.upload-form { display: flex; flex-direction: column; gap: 16px; }
+
+.drop-zone {
+    position: relative;
+    border: 2px dashed #2d6a4f;
+    border-radius: 8px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    color: #555;
+    transition: background 0.2s, border-color 0.2s;
+}
+.drop-zone--over { background: #f0faf4; border-color: #1b4332; }
+.drop-zone__prompt { display: block; font-weight: 600; margin-bottom: 6px; }
+.drop-zone__filename { display: block; font-size: 0.85em; color: #2d6a4f; word-break: break-all; }
+.drop-zone__input {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0; cursor: pointer;
+}
+
+.upload-meta { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.upload-field { display: flex; flex-direction: column; gap: 4px; }
+.upload-field label { font-size: 0.85em; font-weight: 600; color: #555; }
+.upload-field input {
+    padding: 8px 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.95em;
+}
+.upload-submit { border: none; cursor: pointer; font-size: 0.95em; white-space: nowrap; }
+
+button.listen-btn { border: none; cursor: pointer; font-family: inherit; }
+
+/* Audio modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal--open { display: flex; }
+
+.modal-box {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.modal-close {
+    position: absolute; top: 12px; right: 16px;
+    background: none; border: none;
+    font-size: 1.6em; cursor: pointer; color: #666; line-height: 1;
+}
+.modal-close:hover { color: #1b4332; }
+.modal-title { font-size: 1.05em; font-weight: 600; color: #1b4332; margin-bottom: 16px; padding-right: 24px; }
+.modal-audio { width: 100%; }
+
+@media (max-width: 600px) {
+    .upload-meta { flex-direction: column; align-items: stretch; }
+    .upload-submit { width: 100%; text-align: center; }
 }
