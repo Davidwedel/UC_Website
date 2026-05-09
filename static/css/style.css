@@ -328,6 +328,13 @@ button.listen-btn { border: none; cursor: pointer; font-family: inherit; }
 .modal-close:hover { color: #1b4332; }
 .modal-title { font-size: 1.05em; font-weight: 600; color: #1b4332; margin-bottom: 16px; padding-right: 24px; }
 .modal-audio { width: 100%; }
+.modal-skip-btns { display: flex; justify-content: center; gap: 16px; margin-top: 12px; }
+.modal-skip {
+    background: #1b4332; color: white; border: none;
+    border-radius: 6px; padding: 6px 18px;
+    font-size: 0.9em; cursor: pointer; font-weight: 600;
+}
+.modal-skip:hover { background: #2d6a4f; }
 
 @media (max-width: 600px) {
     .upload-meta { flex-direction: column; align-items: stretch; }

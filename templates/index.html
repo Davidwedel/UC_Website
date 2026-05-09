@@ -65,6 +65,10 @@
         <audio controls id="modalAudio" class="modal-audio">
             Your browser does not support audio playback.
         </audio>
+        <div class="modal-skip-btns">
+            <button class="modal-skip" id="skipBack">&#8592; 10s</button>
+            <button class="modal-skip" id="skipForward">10s &#8594;</button>
+        </div>
     </div>
 </div>
 <script>
@@ -85,6 +89,13 @@
         audioEl.pause();
         audioEl.src = '';
     }
+
+    document.getElementById('skipBack').addEventListener('click', function() {
+        audioEl.currentTime = Math.max(0, audioEl.currentTime - 10);
+    });
+    document.getElementById('skipForward').addEventListener('click', function() {
+        audioEl.currentTime = Math.min(audioEl.duration || audioEl.currentTime, audioEl.currentTime + 10);
+    });
 
     document.querySelectorAll('.modal-trigger').forEach(function(btn) {
         btn.addEventListener('click', function() {
