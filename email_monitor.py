@@ -68,6 +68,15 @@ def purge_old_recordings():
         return
     cutoff = datetime.now() - timedelta(days=RECORDING_MAX_AGE_DAYS)
     with get_db() as conn:
+        rows = conn.execute(
+            'SELECT link FROM recordings WHERE received_at < ?', (cutoff,)
+        ).fetchall()
+        for row in rows:
+            link = row[0]
+            if link and link.startswith('/static/uploads/'):
+                file_path = os.path.join(BASE_DIR, link.lstrip('/'))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
         result = conn.execute(
             'DELETE FROM recordings WHERE received_at < ?', (cutoff,)
         )
